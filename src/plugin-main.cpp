@@ -40,8 +40,7 @@ bool obs_hadowplay_is_capture_source(obs_source_t *source)
 		return false;
 
 	const char *source_id = obs_source_get_id(source);
-	return strcmpi(source_id, "monitor_capture") == 0 ||
-	       strcmpi(source_id, "game_capture") == 0 ||
+	return strcmpi(source_id, "monitor_capture") == 0 || strcmpi(source_id, "game_capture") == 0 ||
 	       strcmpi(source_id, "window_capture") == 0;
 }
 
@@ -54,8 +53,7 @@ bool obs_hadowplay_is_capture_source_hooked(obs_source_t *source)
 	calldata_t hooked_calldata;
 	calldata_init(&hooked_calldata);
 
-	proc_handler_t *source_proc_handler =
-		obs_source_get_proc_handler(source);
+	proc_handler_t *source_proc_handler = obs_source_get_proc_handler(source);
 	proc_handler_call(source_proc_handler, "get_hooked", &hooked_calldata);
 
 	bool hooked = calldata_bool(&hooked_calldata, "hooked");
@@ -63,8 +61,7 @@ bool obs_hadowplay_is_capture_source_hooked(obs_source_t *source)
 	hooked &= obs_hadowplay_is_exe_excluded(exe) == false;
 	// Check for width & height, as window captures can stay hooked when hidden
 	if (hooked) {
-		hooked &= (obs_source_get_width(source) != 0 &&
-			   obs_source_get_height(source) != 0);
+		hooked &= (obs_source_get_width(source) != 0 && obs_source_get_height(source) != 0);
 	}
 
 	calldata_free(&hooked_calldata);
@@ -72,34 +69,27 @@ bool obs_hadowplay_is_capture_source_hooked(obs_source_t *source)
 	return hooked;
 }
 
-void obs_hadowplay_enum_source_for_hooked_capture(obs_source_t *parent,
-						  obs_source_t *source,
-						  void *param)
+void obs_hadowplay_enum_source_for_hooked_capture(obs_source_t *parent, obs_source_t *source, void *param)
 {
 	UNUSED_PARAMETER(parent);
 
-	obs_source_t **active_game_capture =
-		reinterpret_cast<obs_source_t **>(param);
+	obs_source_t **active_game_capture = reinterpret_cast<obs_source_t **>(param);
 
 	if (*active_game_capture != nullptr)
 		return;
 
-	if (obs_hadowplay_is_capture_source(source) &&
-	    obs_hadowplay_is_capture_source_hooked(source)) {
+	if (obs_hadowplay_is_capture_source(source) && obs_hadowplay_is_capture_source_hooked(source)) {
 		*active_game_capture = obs_source_get_ref(source);
 	}
 }
 
-void collect_sources_callback(obs_source_t *parent, obs_source_t *source,
-			      void *param)
+void collect_sources_callback(obs_source_t *parent, obs_source_t *source, void *param)
 {
 	UNUSED_PARAMETER(parent);
 
-	obs_source_t **topmost_source =
-		reinterpret_cast<obs_source_t **>(param);
+	obs_source_t **topmost_source = reinterpret_cast<obs_source_t **>(param);
 
-	if (obs_hadowplay_is_capture_source(source) &&
-	    obs_hadowplay_is_capture_source_hooked(source)) {
+	if (obs_hadowplay_is_capture_source(source) && obs_hadowplay_is_capture_source_hooked(source)) {
 		if (*topmost_source != nullptr)
 			obs_source_release(*topmost_source);
 
@@ -113,8 +103,7 @@ obs_source_t *get_active_source()
 
 	obs_source_t *topmost_source = nullptr;
 
-	obs_source_enum_active_tree(scene_source, collect_sources_callback,
-				    &topmost_source);
+	obs_source_enum_active_tree(scene_source, collect_sources_callback, &topmost_source);
 
 	return topmost_source;
 }
@@ -124,11 +113,9 @@ bool obs_hadowplay_get_captured_name(std::string &target_name)
 	obs_source_t *active_capture_source = get_active_source();
 
 	if (active_capture_source != nullptr) {
-		obs_log(LOG_INFO, "Active capture found: %s",
-			obs_source_get_name(active_capture_source));
+		obs_log(LOG_INFO, "Active capture found: %s", obs_source_get_name(active_capture_source));
 
-		obs_hadowplay_get_product_name_from_source(
-			active_capture_source, target_name);
+		obs_hadowplay_get_product_name_from_source(active_capture_source, target_name);
 		obs_source_release(active_capture_source);
 		return true;
 	}
@@ -140,103 +127,78 @@ bool obs_hadowplay_is_replay_controlled = false;
 bool obs_hadowplay_manual_start = false;
 bool obs_hadowplay_manual_stop = false;
 
-template<typename... Args>
-std::string obs_hadowplay_string_format(const std::string &format, Args... args)
+template<typename... Args> std::string obs_hadowplay_string_format(const std::string &format, Args... args)
 {
-	int size_s = std::snprintf(nullptr, 0, format.c_str(), args...) +
-		     1; // Extra space for '\0'
+	int size_s = std::snprintf(nullptr, 0, format.c_str(), args...) + 1; // Extra space for '\0'
 	auto size = static_cast<size_t>(size_s);
 	std::unique_ptr<char[]> buf(new char[size]{});
 	std::snprintf(buf.get(), size, format.c_str(), args...);
 	return std::string(buf.get(),
-			   buf.get() + size -
-				   1); // We don't want the '\0' inside
+			   buf.get() + size - 1); // We don't want the '\0' inside
 }
 
-std::string
-obs_hadowplay_format_output_filename(const std::string &original_filename,
-				     const std::string &target_name)
+std::string obs_hadowplay_format_output_filename(const std::string &original_filename, const std::string &target_name)
 {
 	if (Config::Inst().m_use_custom_filename_format == true) {
-		std::string extension =
-			os_get_path_extension(original_filename.c_str());
+		std::string extension = os_get_path_extension(original_filename.c_str());
 
 		size_t extension_start = original_filename.rfind(extension);
 
-		std::string original_name =
-			original_filename.substr(0, extension_start);
+		std::string original_name = original_filename.substr(0, extension_start);
 
 		const static std::string stringReplacement = std::string("%s");
 
-		std::string format =
-			stringReplacement +
-			Config::Inst().m_custom_filename_seperator +
-			stringReplacement;
+		std::string format = stringReplacement + Config::Inst().m_custom_filename_seperator + stringReplacement;
 
 		// Default FilenameArrangment of TargetBefore
-		std::string first_argument =
-			obs_hadowplay_cleanup_path_string(target_name);
+		std::string first_argument = obs_hadowplay_cleanup_path_string(target_name);
 		std::string second_argument = original_name;
 
-		if (Config::Inst().m_custom_filename_arrangement ==
-		    TargetAfter) {
+		if (Config::Inst().m_custom_filename_arrangement == TargetAfter) {
 			second_argument = first_argument;
 			first_argument = original_name;
 		}
 
 		return obs_hadowplay_cleanup_path_string(
-			obs_hadowplay_string_format(format,
-						    first_argument.c_str(),
-						    second_argument.c_str())
+			obs_hadowplay_string_format(format, first_argument.c_str(), second_argument.c_str())
 				.append(extension));
 	} else {
 		return original_filename;
 	}
 }
 
-std::string obs_hadowplay_move_output_file(const std::string &original_filepath,
-					   const std::string &target_name)
+std::string obs_hadowplay_move_output_file(const std::string &original_filepath, const std::string &target_name)
 {
 	const size_t filename_pos = original_filepath.find_last_of("/\\") + 1;
 
 	std::string replay_filename = original_filepath.substr(filename_pos);
 
-	std::string target_directory =
-		original_filepath.substr(0, filename_pos);
+	std::string target_directory = original_filepath.substr(0, filename_pos);
 
 	if (Config::Inst().m_enable_folder_organisation) {
-		target_directory =
-			target_directory +
-			obs_hadowplay_cleanup_path_string(target_name);
+		target_directory = target_directory + obs_hadowplay_cleanup_path_string(target_name);
 
 		if (os_file_exists(target_directory.c_str()) == false) {
-			obs_log(LOG_INFO, "Creating directory: %s",
-				target_directory.c_str());
+			obs_log(LOG_INFO, "Creating directory: %s", target_directory.c_str());
 			if (os_mkdir(target_directory.c_str()) != 0) {
-				obs_log(LOG_ERROR,
-					"Failed to create directory: errno %i",
-					errno);
+				obs_log(LOG_ERROR, "Failed to create directory: errno %i", errno);
 			} else {
-				obs_log(LOG_INFO,
-					"Succesfully created directory: %s",
-					target_directory.c_str());
+				obs_log(LOG_INFO, "Succesfully created directory: %s", target_directory.c_str());
 			}
 		}
 	}
 
-	replay_filename = obs_hadowplay_format_output_filename(replay_filename,
-							       target_name);
+	replay_filename = obs_hadowplay_format_output_filename(replay_filename, target_name);
 
 	std::string new_filepath = target_directory + "/" + replay_filename;
 
-	obs_log(LOG_INFO, "Renaming file: %s -> %s", original_filepath.c_str(),
-		new_filepath.c_str());
+	obs_log(LOG_INFO, "Renaming file: %s -> %s", original_filepath.c_str(), new_filepath.c_str());
 
 	if (os_rename(original_filepath.c_str(), new_filepath.c_str()) != 0) {
 		obs_log(LOG_ERROR, "Failed to rename file: errno %i", errno);
 	} else {
-		obs_log(LOG_INFO, "Successfully renamed file: %s -> %s",
-			original_filepath.c_str(), new_filepath.c_str());
+		obs_log(LOG_INFO, "Successfully renamed file: %s -> %s", original_filepath.c_str(),
+			new_filepath.c_str());
 	}
 
 	if (Config::Inst().m_post_save_script) {
@@ -246,8 +208,7 @@ std::string obs_hadowplay_move_output_file(const std::string &original_filepath,
 	return new_filepath;
 }
 
-void obs_hadowplay_notify_saved(const std::string &title,
-				const std::string &filepath)
+void obs_hadowplay_notify_saved(const std::string &title, const std::string &filepath)
 {
 	if (Config::Inst().m_play_notif_sound == true) {
 		obs_hadowplay_play_notif_sound();
@@ -257,8 +218,7 @@ void obs_hadowplay_notify_saved(const std::string &title,
 	}
 }
 
-using obs_hadowplay_time_point =
-	std::chrono::time_point<std::chrono::steady_clock>;
+using obs_hadowplay_time_point = std::chrono::time_point<std::chrono::steady_clock>;
 
 obs_hadowplay_time_point requested_stop;
 
@@ -295,18 +255,14 @@ bool obs_hadowplay_start_automatic_replay_buffer()
 
 bool obs_hadowplay_stop_automatic_replay_buffer(bool force = false)
 {
-	if (Config::Inst().m_auto_replay_buffer_stop_delay != 0 &&
-	    force == false) {
-		obs_hadowplay_time_point current_time =
-			std::chrono::steady_clock::now();
+	if (Config::Inst().m_auto_replay_buffer_stop_delay != 0 && force == false) {
+		obs_hadowplay_time_point current_time = std::chrono::steady_clock::now();
 
 		if (requested_stop.time_since_epoch().count() == 0) {
 			// Start point for delay timer
 			requested_stop = current_time;
 			return false;
-		} else if (std::chrono::duration_cast<std::chrono::seconds>(
-				   current_time - requested_stop)
-				   .count() <
+		} else if (std::chrono::duration_cast<std::chrono::seconds>(current_time - requested_stop).count() <
 			   Config::Inst().m_auto_replay_buffer_stop_delay) {
 			return false;
 		}
@@ -320,8 +276,7 @@ bool obs_hadowplay_stop_automatic_replay_buffer(bool force = false)
 		return false;
 
 	// False if manually started
-	if (os_atomic_load_bool(&obs_hadowplay_manual_start) == true &&
-	    force == false)
+	if (os_atomic_load_bool(&obs_hadowplay_manual_start) == true && force == false)
 		return false;
 
 	obs_log(LOG_INFO, "Automatic replay stopped");
@@ -332,22 +287,17 @@ bool obs_hadowplay_stop_automatic_replay_buffer(bool force = false)
 	return true;
 }
 
-void obs_hadowplay_default_replay_buffer_event_callback(
-	enum obs_frontend_event event, void *private_data);
+void obs_hadowplay_default_replay_buffer_event_callback(enum obs_frontend_event event, void *private_data);
 
 void obs_hadowplay_replay_buffer_deactivated(void *data, calldata_t *calldata)
 {
-	obs_frontend_add_event_callback(
-		obs_hadowplay_default_replay_buffer_event_callback, NULL);
+	obs_frontend_add_event_callback(obs_hadowplay_default_replay_buffer_event_callback, NULL);
 
 	obs_output_t *output = (obs_output_t *)calldata_ptr(calldata, "output");
 
-	signal_handler_t *signal_handler =
-		obs_output_get_signal_handler(output);
+	signal_handler_t *signal_handler = obs_output_get_signal_handler(output);
 
-	signal_handler_disconnect(signal_handler, "deactivate",
-				  &obs_hadowplay_replay_buffer_deactivated,
-				  nullptr);
+	signal_handler_disconnect(signal_handler, "deactivate", &obs_hadowplay_replay_buffer_deactivated, nullptr);
 
 	obs_log(LOG_INFO, "Replay buffer successfully restarted");
 
@@ -358,17 +308,13 @@ void obs_hadowplay_restart_replay_buffer()
 {
 	obs_log(LOG_INFO, "Restarting replay buffer");
 
-	obs_frontend_remove_event_callback(
-		obs_hadowplay_default_replay_buffer_event_callback, NULL);
+	obs_frontend_remove_event_callback(obs_hadowplay_default_replay_buffer_event_callback, NULL);
 
 	obs_output_t *replay_buffer = obs_frontend_get_replay_buffer_output();
 
-	signal_handler_t *signal_handler =
-		obs_output_get_signal_handler(replay_buffer);
+	signal_handler_t *signal_handler = obs_output_get_signal_handler(replay_buffer);
 
-	signal_handler_connect(signal_handler, "deactivate",
-			       &obs_hadowplay_replay_buffer_deactivated,
-			       nullptr);
+	signal_handler_connect(signal_handler, "deactivate", &obs_hadowplay_replay_buffer_deactivated, nullptr);
 
 	obs_output_force_stop(replay_buffer);
 
@@ -423,20 +369,15 @@ void *obs_hadowplay_update(void *param)
 
 	os_atomic_store_bool(&obs_hadowplay_update_thread_running, true);
 
-	while (os_atomic_load_bool(&obs_hadowplay_update_thread_running) ==
-	       true) {
+	while (os_atomic_load_bool(&obs_hadowplay_update_thread_running) == true) {
 
 		if (obs_hadowplay_refresh_automatic_replay_buffer() == true) {
-			if (obs_hadowplay_start_automatic_replay_buffer() ==
-			    true) {
-				obs_log(LOG_INFO,
-					"Started automatic replay buffer");
+			if (obs_hadowplay_start_automatic_replay_buffer() == true) {
+				obs_log(LOG_INFO, "Started automatic replay buffer");
 			}
 		} else {
-			if (obs_hadowplay_stop_automatic_replay_buffer() ==
-			    true) {
-				obs_log(LOG_INFO,
-					"Stopped automatic replay buffer");
+			if (obs_hadowplay_stop_automatic_replay_buffer() == true) {
+				obs_log(LOG_INFO, "Stopped automatic replay buffer");
 			}
 		}
 
@@ -452,8 +393,7 @@ void *obs_hadowplay_update(void *param)
 
 void obs_hadowplay_initialise_update_thread()
 {
-	int result = pthread_create(&update_thread, NULL, obs_hadowplay_update,
-				    NULL);
+	int result = pthread_create(&update_thread, NULL, obs_hadowplay_update, NULL);
 	if (result != 0) {
 		obs_log(LOG_ERROR,
 			"Failed to create update thread (code %d), plugin is no longer able to track when to toggle the replay buffer",
@@ -524,14 +464,9 @@ void obs_hadowplay_source_activated(void *data, calldata_t *calldata)
 	obs_source_t *source = (obs_source_t *)calldata_ptr(calldata, "source");
 
 	if (obs_hadowplay_is_capture_source(source)) {
-		signal_handler_t *source_signal_handler =
-			obs_source_get_signal_handler(source);
-		signal_handler_connect(source_signal_handler, "hooked",
-				       &obs_hadowplay_win_capture_hooked,
-				       nullptr);
-		signal_handler_connect(source_signal_handler, "unhooked",
-				       &obs_hadowplay_win_capture_unhooked,
-				       nullptr);
+		signal_handler_t *source_signal_handler = obs_source_get_signal_handler(source);
+		signal_handler_connect(source_signal_handler, "hooked", &obs_hadowplay_win_capture_hooked, nullptr);
+		signal_handler_connect(source_signal_handler, "unhooked", &obs_hadowplay_win_capture_unhooked, nullptr);
 	}
 }
 
@@ -543,13 +478,9 @@ void obs_hadowplay_source_deactivated(void *data, calldata_t *calldata)
 	obs_source_t *source = (obs_source_t *)calldata_ptr(calldata, "source");
 
 	if (obs_hadowplay_is_capture_source(source)) {
-		signal_handler_t *source_signal_handler =
-			obs_source_get_signal_handler(source);
-		signal_handler_disconnect(source_signal_handler, "hooked",
-					  &obs_hadowplay_win_capture_hooked,
-					  nullptr);
-		signal_handler_disconnect(source_signal_handler, "unhooked",
-					  &obs_hadowplay_win_capture_unhooked,
+		signal_handler_t *source_signal_handler = obs_source_get_signal_handler(source);
+		signal_handler_disconnect(source_signal_handler, "hooked", &obs_hadowplay_win_capture_hooked, nullptr);
+		signal_handler_disconnect(source_signal_handler, "unhooked", &obs_hadowplay_win_capture_unhooked,
 					  nullptr);
 	}
 }
@@ -559,14 +490,11 @@ void obs_hadowplay_source_deactivated(void *data, calldata_t *calldata)
 void obs_hadowplay_initialise()
 {
 	signal_handler_t *signal_handler = obs_get_signal_handler();
-	signal_handler_connect(signal_handler, "source_activate",
-			       &obs_hadowplay_source_activated, nullptr);
-	signal_handler_connect(signal_handler, "source_deactivate",
-			       &obs_hadowplay_source_deactivated, nullptr);
+	signal_handler_connect(signal_handler, "source_activate", &obs_hadowplay_source_activated, nullptr);
+	signal_handler_connect(signal_handler, "source_deactivate", &obs_hadowplay_source_deactivated, nullptr);
 }
 
-void obs_hadowplay_default_replay_buffer_event_callback(
-	enum obs_frontend_event event, void *private_data)
+void obs_hadowplay_default_replay_buffer_event_callback(enum obs_frontend_event event, void *private_data)
 {
 	UNUSED_PARAMETER(private_data);
 
@@ -575,21 +503,18 @@ void obs_hadowplay_default_replay_buffer_event_callback(
 #pragma region Replay events
 
 	case OBS_FRONTEND_EVENT_REPLAY_BUFFER_STOPPED: {
-		if (os_atomic_load_bool(&obs_hadowplay_is_replay_controlled) ==
-		    true) {
+		if (os_atomic_load_bool(&obs_hadowplay_is_replay_controlled) == true) {
 			obs_log(LOG_INFO, "Replay buffer manually stopped");
 			os_atomic_store_bool(&obs_hadowplay_manual_stop, true);
 		}
 
-		os_atomic_store_bool(&obs_hadowplay_is_replay_controlled,
-				     false);
+		os_atomic_store_bool(&obs_hadowplay_is_replay_controlled, false);
 		os_atomic_store_bool(&obs_hadowplay_manual_start, false);
 		break;
 	}
 
 	case OBS_FRONTEND_EVENT_REPLAY_BUFFER_STARTED: {
-		if (os_atomic_load_bool(&obs_hadowplay_is_replay_controlled) ==
-		    false) {
+		if (os_atomic_load_bool(&obs_hadowplay_is_replay_controlled) == false) {
 			os_atomic_store_bool(&obs_hadowplay_manual_start, true);
 		}
 		break;
@@ -606,9 +531,7 @@ void obs_hadowplay_default_replay_buffer_event_callback(
 		if (Config::Inst().m_enable_auto_organisation == true &&
 		    obs_hadowplay_get_captured_name(target_name) == true) {
 
-			std::string new_filepath =
-				obs_hadowplay_move_output_file(replay_path_c,
-							       target_name);
+			std::string new_filepath = obs_hadowplay_move_output_file(replay_path_c, target_name);
 
 			replay_path_c = new_filepath.c_str();
 		}
@@ -627,8 +550,7 @@ void obs_hadowplay_default_replay_buffer_event_callback(
 
 std::string recording_target_name;
 
-void obs_hadowplay_frontend_event_callback(enum obs_frontend_event event,
-					   void *private_data)
+void obs_hadowplay_frontend_event_callback(enum obs_frontend_event event, void *private_data)
 {
 	UNUSED_PARAMETER(private_data);
 
@@ -641,30 +563,25 @@ void obs_hadowplay_frontend_event_callback(enum obs_frontend_event event,
 #pragma region Screenshot event
 
 	case OBS_FRONTEND_EVENT_SCREENSHOT_TAKEN: {
-		const char *screenshot_path_c =
-			obs_frontend_get_last_screenshot();
+		const char *screenshot_path_c = obs_frontend_get_last_screenshot();
 
 		if (screenshot_path_c == NULL) {
 			return;
 		}
 
-		if (Config::Inst().m_enable_auto_organisation == true &&
-		    Config::Inst().m_include_screenshots == true) {
+		if (Config::Inst().m_enable_auto_organisation == true && Config::Inst().m_include_screenshots == true) {
 
 			std::string target_name;
-			if (obs_hadowplay_get_captured_name(target_name) ==
-			    true) {
+			if (obs_hadowplay_get_captured_name(target_name) == true) {
 
 				std::string new_filepath =
-					obs_hadowplay_move_output_file(
-						screenshot_path_c, target_name);
+					obs_hadowplay_move_output_file(screenshot_path_c, target_name);
 
 				screenshot_path_c = new_filepath.c_str();
 			}
 		}
 
-		obs_hadowplay_notify_saved("Screenshot Saved",
-					   screenshot_path_c);
+		obs_hadowplay_notify_saved("Screenshot Saved", screenshot_path_c);
 		break;
 	}
 
@@ -678,15 +595,13 @@ void obs_hadowplay_frontend_event_callback(enum obs_frontend_event event,
 
 		if (obs_hadowplay_get_captured_name(target_name) == true) {
 			recording_target_name = target_name;
-			obs_log(LOG_INFO, "Recording target found: %s",
-				recording_target_name.c_str());
+			obs_log(LOG_INFO, "Recording target found: %s", recording_target_name.c_str());
 		}
 		break;
 	}
 
 	case OBS_FRONTEND_EVENT_RECORDING_STOPPED: {
-		const char *recording_path_c =
-			obs_frontend_get_last_recording();
+		const char *recording_path_c = obs_frontend_get_last_recording();
 
 		if (recording_path_c == NULL) {
 			return;
@@ -697,21 +612,16 @@ void obs_hadowplay_frontend_event_callback(enum obs_frontend_event event,
 			if (recording_target_name.empty() == true) {
 				std::string target_name;
 
-				if (obs_hadowplay_get_captured_name(
-					    target_name) == true) {
+				if (obs_hadowplay_get_captured_name(target_name) == true) {
 					recording_target_name = target_name;
-					obs_log(LOG_INFO,
-						"Recording target found: %s",
-						recording_target_name.c_str());
+					obs_log(LOG_INFO, "Recording target found: %s", recording_target_name.c_str());
 				}
 			}
 
 			if (recording_target_name.empty() == false) {
 
 				std::string new_filepath =
-					obs_hadowplay_move_output_file(
-						recording_path_c,
-						recording_target_name);
+					obs_hadowplay_move_output_file(recording_path_c, recording_target_name);
 
 				recording_path_c = new_filepath.c_str();
 			}
@@ -734,8 +644,7 @@ void obs_hadowplay_frontend_event_callback(enum obs_frontend_event event,
 	}
 }
 
-void obs_hadowplay_save_callback(obs_data_t *save_data, bool saving,
-				 void *private_data)
+void obs_hadowplay_save_callback(obs_data_t *save_data, bool saving, void *private_data)
 {
 	UNUSED_PARAMETER(private_data);
 
@@ -762,11 +671,9 @@ bool obs_module_load(void)
 {
 	obs_hadowplay_initialise();
 
-	obs_frontend_add_event_callback(obs_hadowplay_frontend_event_callback,
-					NULL);
+	obs_frontend_add_event_callback(obs_hadowplay_frontend_event_callback, NULL);
 
-	obs_frontend_add_event_callback(
-		obs_hadowplay_default_replay_buffer_event_callback, NULL);
+	obs_frontend_add_event_callback(obs_hadowplay_default_replay_buffer_event_callback, NULL);
 
 	obs_frontend_push_ui_translation(obs_module_get_string);
 
@@ -775,13 +682,11 @@ bool obs_module_load(void)
 
 	obs_frontend_pop_ui_translation();
 
-	obs_frontend_add_tools_menu_item(
-		TEXT_SETTINGS_MENU, obs_hadowplay_show_settings_dialog, NULL);
+	obs_frontend_add_tools_menu_item(TEXT_SETTINGS_MENU, obs_hadowplay_show_settings_dialog, NULL);
 
 	obs_frontend_add_save_callback(obs_hadowplay_save_callback, NULL);
 
-	obs_log(LOG_INFO, "plugin loaded successfully (version %s)",
-		PLUGIN_VERSION);
+	obs_log(LOG_INFO, "plugin loaded successfully (version %s)", PLUGIN_VERSION);
 
 	return true;
 }

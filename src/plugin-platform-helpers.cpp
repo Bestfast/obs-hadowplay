@@ -20,28 +20,22 @@ struct SystemTrayNotification {
 	QString message;
 };
 
-bool obs_hadowplay_show_notification(const std::string &title,
-				     const std::string &message)
+bool obs_hadowplay_show_notification(const std::string &title, const std::string &message)
 {
-	if (!QSystemTrayIcon::isSystemTrayAvailable() ||
-	    !QSystemTrayIcon::supportsMessages())
+	if (!QSystemTrayIcon::isSystemTrayAvailable() || !QSystemTrayIcon::supportsMessages())
 		return false;
 
-	SystemTrayNotification *notification = new SystemTrayNotification{
-		QString(title.c_str()), QString(message.c_str())};
+	SystemTrayNotification *notification =
+		new SystemTrayNotification{QString(title.c_str()), QString(message.c_str())};
 
 	obs_queue_task(
 		OBS_TASK_UI,
 		[](void *param) {
 			void *systemTrayPtr = obs_frontend_get_system_tray();
-			auto systemTray =
-				static_cast<QSystemTrayIcon *>(systemTrayPtr);
+			auto systemTray = static_cast<QSystemTrayIcon *>(systemTrayPtr);
 
-			auto notification =
-				static_cast<SystemTrayNotification *>(param);
-			systemTray->showMessage(notification->title,
-						notification->message,
-						QSystemTrayIcon::NoIcon);
+			auto notification = static_cast<SystemTrayNotification *>(param);
+			systemTray->showMessage(notification->title, notification->message, QSystemTrayIcon::NoIcon);
 			delete notification;
 		},
 		(void *)notification, false);

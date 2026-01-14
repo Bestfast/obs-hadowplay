@@ -1,5 +1,4 @@
-#if defined(__linux__) || defined(__linux) || defined(linux) || \
-	defined(__gnu_linux__)
+#if defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
 
 #include <util/dstr.h>
 
