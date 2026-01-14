@@ -69,20 +69,6 @@ bool obs_hadowplay_is_capture_source_hooked(obs_source_t *source)
 	return hooked;
 }
 
-void obs_hadowplay_enum_source_for_hooked_capture(obs_source_t *parent, obs_source_t *source, void *param)
-{
-	UNUSED_PARAMETER(parent);
-
-	obs_source_t **active_game_capture = reinterpret_cast<obs_source_t **>(param);
-
-	if (*active_game_capture != nullptr)
-		return;
-
-	if (obs_hadowplay_is_capture_source(source) && obs_hadowplay_is_capture_source_hooked(source)) {
-		*active_game_capture = obs_source_get_ref(source);
-	}
-}
-
 void collect_sources_callback(obs_source_t *parent, obs_source_t *source, void *param)
 {
 	UNUSED_PARAMETER(parent);
