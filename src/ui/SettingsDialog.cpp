@@ -44,9 +44,9 @@ SettingsDialog::SettingsDialog() : QDialog(nullptr), ui(new Ui::SettingsDialog)
 
 	connect(ui->browse_script_button, &QPushButton::pressed, this,
 		&SettingsDialog::browse_script_pressed);
-
-	connect(ui->enable_post_save_script_checkbox, &QCheckBox::stateChanged,
-		[this](int state) {
+	
+	connect(ui->enable_post_save_script_checkbox, &QCheckBox::checkStateChanged,
+		[this](Qt::CheckState state) {
 			bool enabled = state == Qt::Checked;
 			ui->post_save_script_path->setEnabled(enabled);
 			ui->browse_script_button->setEnabled(enabled);
