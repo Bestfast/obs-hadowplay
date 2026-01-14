@@ -100,10 +100,14 @@ void collect_sources_callback(obs_source_t *parent, obs_source_t *source, void *
 obs_source_t *get_active_source()
 {
 	obs_source_t *scene_source = obs_frontend_get_current_scene();
+	if (!scene_source)
+		return nullptr;
 
 	obs_source_t *topmost_source = nullptr;
 
 	obs_source_enum_active_tree(scene_source, collect_sources_callback, &topmost_source);
+
+	obs_source_release(scene_source);
 
 	return topmost_source;
 }
