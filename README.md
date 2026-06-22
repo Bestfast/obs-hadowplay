@@ -1,4 +1,4 @@
-# OBS Hadowplay
+# OBS Hadowplay 
 ![Logo](/obs-hadowplay-icon.png)
 ## Introduction
 
